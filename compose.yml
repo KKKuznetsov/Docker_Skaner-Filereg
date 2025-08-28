@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16
+    container_name: etl_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: appdb
+      TZ: Europe/Moscow
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+
+  scanner:
+    build: ./scanner          
+    container_name: etl_scanner
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db             
+      DB_PORT: 5432
+      DB_NAME: appdb
+      DB_USER: app
+      DB_PASS: secret
+    # смонтируем твоё локальное хранилище как /data (read-only)
+    volumes:
+      - "C:/Users/user/Desktop/Поставщики данных:/data:ro"
+    working_dir: /app
+    # первый прогон: только посмотреть, что найдёт (без записи)
+    # command: ["--root", "/data", "--dry-run"]
+    # рабочий режим (запись в БД):
+    command: ["--root", "/data"]
+
+volumes:
+  pgdata:
